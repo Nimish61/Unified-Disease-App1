@@ -23,7 +23,7 @@ models = {
     'kidney': load_model('CKD_best_model.pkl'),
     'heart': load_model('Heart_best_model.pkl'),
     'stroke': load_model('Stroke_best_model.pkl'),
-    'liver': load_model('Liver_model.pkl')
+    'liver': load_model('Liver_best_model.pkl')
 }
 
 @app.route('/api/predict/general', methods=['POST'])
