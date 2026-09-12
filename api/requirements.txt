@@ -1,7 +1,3 @@
 Flask==3.0.0
 scikit-learn
-pandas
-xgboost
-catboost
-lightgbm
 numpy
