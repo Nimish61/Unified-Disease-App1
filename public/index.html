@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitaPredict - General Health Panel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #17324d;
+            margin-bottom: 30px;
+        }
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9eef3;
+        }
+        .form-section h3 {
+            color: #365f78;
+            margin-bottom: 15px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #17324d;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #2d536d;
+        }
+        #results-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e9eef3;
+            border-radius: 8px;
+            display: none;
+        }
+        .result-item {
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #c8d3dd;
+            padding-bottom: 5px;
+        }
+        .high-risk {
+            color: #d9534f;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>VitaPredict General Panel</h1>
+    
+    <form id="health-form">
+        
+        <!-- SECTION 1: Vitals & History -->
+        <div class="form-section">
+            <h3>Demographics, Vitals & History</h3>
+            <div class="grid">
+                <div><label>Age</label><input type="number" id="age" value="0"></div>
+                <div><label>Gender</label>
+                    <select id="gender">
+                        <option value="0">Female</option>
+                        <option value="1">Male</option>
+                    </select>
+                </div>
+                <div><label>BMI</label><input type="number" id="bmi" step="0.1" value="0"></div>
+                <div><label>Resting Blood Pressure</label><input type="number" id="blood_pressure" value="0"></div>
+                <div><label>Smoking Status</label>
+                    <select id="smoking">
+                        <option value="0">Never</option>
+                        <option value="1">Former/Current</option>
+                    </select>
+                </div>
+                <div><label>Ever Married</label>
+                    <select id="ever_married">
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                <div><label>Work Type (0-4)</label><input type="number" id="work_type" value="0"></div>
+                <div><label>Residence (0:Rural, 1:Urban)</label><input type="number" id="residence_type" value="0"></div>
+                <div><label>Hypertension History</label>
+                    <select id="hypertension"><option value="0">No</option><option value="1">Yes</option></select>
+                </div>
+                <div><label>Diabetes History</label>
+                    <select id="diabetes_history"><option value="0">No</option><option value="1">Yes</option></select>
+                </div>
+                <div><label>Coronary Disease History</label>
+                    <select id="cad_history"><option value="0">No</option><option value="1">Yes</option></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: Metabolic & Diabetic -->
+        <div class="form-section">
+            <h3>Metabolic & Diabetic Parameters</h3>
+            <div class="grid">
+                <div><label>Glucose</label><input type="number" id="glucose" value="0"></div>
+                <div><label>Insulin</label><input type="number" id="insulin" value="0"></div>
+                <div><label>Pregnancies</label><input type="number" id="pregnancies" value="0"></div>
+                <div><label>Skin Thickness</label><input type="number" id="skin_thickness" value="0"></div>
+                <div><label>Diabetes Pedigree Function</label><input type="number" id="dpf" step="0.01" value="0"></div>
+                <div><label>Fasting Blood Sugar > 120 (0/1)</label><input type="number" id="fbs" value="0"></div>
+                <div><label>Blood Glucose Random</label><input type="number" id="bgr" value="0"></div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: Cardiac & Lipids -->
+        <div class="form-section">
+            <h3>Cardiac, Lipids & Enzymes</h3>
+            <div class="grid">
+                <div><label>Cholesterol</label><input type="number" id="cholesterol" value="0"></div>
+                <div><label>Chest Pain Type (0-3)</label><input type="number" id="chest_pain_type" value="0"></div>
+                <div><label>Resting ECG (0-2)</label><input type="number" id="rest_ecg" value="0"></div>
+                <div><label>Max Heart Rate</label><input type="number" id="max_heart_rate" value="0"></div>
+                <div><label>Exercise Angina (0/1)</label><input type="number" id="exercise_angina" value="0"></div>
+                <div><label>ST Depression (Oldpeak)</label><input type="number" id="oldpeak" step="0.1" value="0"></div>
+                <div><label>Slope (0-2)</label><input type="number" id="slope" value="0"></div>
+                <div><label>Major Vessels (0-3)</label><input type="number" id="num_major_vessels" value="0"></div>
+                <div><label>Thalassemia (0-3)</label><input type="number" id="thalassemia" value="0"></div>
+                <div><label>Creatinine Phosphokinase</label><input type="number" id="cpk" value="0"></div>
+                <div><label>Ejection Fraction</label><input type="number" id="ejection_fraction" value="0"></div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: Hepatic (Liver) -->
+        <div class="form-section">
+            <h3>Liver Function Test (LFT)</h3>
+            <div class="grid">
+                <div><label>Total Bilirubin</label><input type="number" id="total_bilirubin" step="0.1" value="0"></div>
+                <div><label>Direct Bilirubin</label><input type="number" id="direct_bilirubin" step="0.1" value="0"></div>
+                <div><label>Alkaline Phosphotase</label><input type="number" id="alkaline_phosphotase" value="0"></div>
+                <div><label>ALT (Alamine Aminotransferase)</label><input type="number" id="alt" value="0"></div>
+                <div><label>AST (Aspartate Aminotransferase)</label><input type="number" id="ast" value="0"></div>
+                <div><label>Total Proteins</label><input type="number" id="total_proteins" step="0.1" value="0"></div>
+                <div><label>A/G Ratio</label><input type="number" id="agr" step="0.1" value="0"></div>
+            </div>
+        </div>
+
+        <!-- SECTION 5: Renal & Urine (Kidney) -->
+        <div class="form-section">
+            <h3>Renal Function & Urine Analysis</h3>
+            <div class="grid">
+                <div><label>Blood Urea</label><input type="number" id="blood_urea" value="0"></div>
+                <div><label>Serum Creatinine</label><input type="number" id="serum_creatinine" step="0.1" value="0"></div>
+                <div><label>Serum Sodium</label><input type="number" id="serum_sodium" value="0"></div>
+                <div><label>Potassium</label><input type="number" id="potassium" step="0.1" value="0"></div>
+                <div><label>Specific Gravity</label><input type="number" id="specific_gravity" step="0.001" value="1.000"></div>
+                <div><label>Urine Albumin (0-5)</label><input type="number" id="albumin" value="0"></div>
+                <div><label>Urine Sugar (0-5)</label><input type="number" id="urine_sugar" value="0"></div>
+                <div><label>Urine RBC (0:Norm, 1:Abn)</label><input type="number" id="rbc" value="0"></div>
+                <div><label>Pus Cell (0:Norm, 1:Abn)</label><input type="number" id="pus_cell" value="0"></div>
+                <div><label>Pus Cell Clumps (0:NP, 1:P)</label><input type="number" id="pus_cell_clumps" value="0"></div>
+                <div><label>Bacteria (0:NP, 1:P)</label><input type="number" id="bacteria" value="0"></div>
+            </div>
+        </div>
+
+        <!-- SECTION 6: Hematology & Clinical -->
+        <div class="form-section">
+            <h3>Hematology (CBC) & Clinical Observations</h3>
+            <div class="grid">
+                <div><label>Hemoglobin</label><input type="number" id="hemoglobin" step="0.1" value="0"></div>
+                <div><label>Packed Cell Volume</label><input type="number" id="pcv" value="0"></div>
+                <div><label>WBC Count</label><input type="number" id="wbc_count" value="0"></div>
+                <div><label>RBC Count</label><input type="number" id="rbc_count" step="0.1" value="0"></div>
+                <div><label>Platelets</label><input type="number" id="platelets" value="0"></div>
+                <div><label>Anaemia (0:No, 1:Yes)</label><input type="number" id="anaemia" value="0"></div>
+                <div><label>Appetite (0:Good, 1:Poor)</label><input type="number" id="appetite" value="0"></div>
+                <div><label>Pedal Edema (0:No, 1:Yes)</label><input type="number" id="pedal_edema" value="0"></div>
+                <div><label>Follow-up Time (Days)</label><input type="number" id="follow_up_time" value="0"></div>
+            </div>
+        </div>
+
+        <button type="button" onclick="calculateRisk()">Calculate Risk Probabilities</button>
+    </form>
+
+    <!-- RESULTS SECTION -->
+    <div id="results-container">
+        <h2 style="color:#17324d; border-bottom: 2px solid #c8d3dd; padding-bottom: 10px;">Predicted Probabilities</h2>
+        <div id="results-list"></div>
+        <p style="font-size: 12px; color: #666; margin-top: 15px;">*If any probability exceeds the risk threshold, the GenAI integration will automatically generate your personalized health routine here.</p>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+
+<!-- Inline script modification for the frontend to handle the response -->
+<script>
+    // Overriding the script.js console log to visually update the HTML
+    async function calculateRisk() {
+        const btn = document.querySelector('button');
+        btn.innerText = "Analyzing Parameters...";
+        btn.style.backgroundColor = "#526777";
+
+        // (The payload object from your script.js goes here, but calling the original function works if defined. 
+        // For demonstration, we will intercept the fetch call behavior below.)
+        
+        try {
+            // Using the exact payload keys from your script.js
+            const patientData = {
+                Age: document.getElementById('age').value,
+                Gender: document.getElementById('gender').value,
+                BMI: document.getElementById('bmi').value,
+                BloodPressure: document.getElementById('blood_pressure').value,
+                Glucose: document.getElementById('glucose').value,
+                Insulin: document.getElementById('insulin').value,
+                Pregnancies: document.getElementById('pregnancies').value,
+                SkinThickness: document.getElementById('skin_thickness').value,
+                DiabetesPedigreeFunction: document.getElementById('dpf').value,
+                Anaemia: document.getElementById('anaemia').value,
+                CreatininePhosphokinase: document.getElementById('cpk').value,
+                DiabetesMellitus: document.getElementById('diabetes_history').value,
+                EjectionFraction: document.getElementById('ejection_fraction').value,
+                Hypertension: document.getElementById('hypertension').value,
+                Platelets: document.getElementById('platelets').value,
+                SerumCreatinine: document.getElementById('serum_creatinine').value,
+                SerumSodium: document.getElementById('serum_sodium').value,
+                Smoking: document.getElementById('smoking').value,
+                FollowUpTime: document.getElementById('follow_up_time').value,
+                SpecificGravity: document.getElementById('specific_gravity').value,
+                Albumin: document.getElementById('albumin').value,
+                UrineSugar: document.getElementById('urine_sugar').value,
+                RedBloodCells: document.getElementById('rbc').value,
+                PusCell: document.getElementById('pus_cell').value,
+                PusCellClumps: document.getElementById('pus_cell_clumps').value,
+                Bacteria: document.getElementById('bacteria').value,
+                BloodGlucoseRandom: document.getElementById('bgr').value,
+                BloodUrea: document.getElementById('blood_urea').value,
+                Potassium: document.getElementById('potassium').value,
+                Hemoglobin: document.getElementById('hemoglobin').value,
+                PackedCellVolume: document.getElementById('pcv').value,
+                WhiteBloodCellCount: document.getElementById('wbc_count').value,
+                RedBloodCellCount: document.getElementById('rbc_count').value,
+                CoronaryArteryDisease: document.getElementById('cad_history').value,
+                Appetite: document.getElementById('appetite').value,
+                PedalEdema: document.getElementById('pedal_edema').value,
+                ChestPainType: document.getElementById('chest_pain_type').value,
+                Cholesterol: document.getElementById('cholesterol').value,
+                FastingBloodSugar: document.getElementById('fbs').value,
+                RestECG: document.getElementById('rest_ecg').value,
+                MaxHeartRate: document.getElementById('max_heart_rate').value,
+                ExerciseAngina: document.getElementById('exercise_angina').value,
+                Oldpeak: document.getElementById('oldpeak').value,
+                Slope: document.getElementById('slope').value,
+                NumMajorVessels: document.getElementById('num_major_vessels').value,
+                Thalassemia: document.getElementById('thalassemia').value,
+                EverMarried: document.getElementById('ever_married').value,
+                WorkType: document.getElementById('work_type').value,
+                ResidenceType: document.getElementById('residence_type').value,
+                TotalBilirubin: document.getElementById('total_bilirubin').value,
+                DirectBilirubin: document.getElementById('direct_bilirubin').value,
+                AlkalinePhosphotase: document.getElementById('alkaline_phosphotase').value,
+                AlamineAminotransferase: document.getElementById('alt').value,
+                AspartateAminotransferase: document.getElementById('ast').value,
+                TotalProteins: document.getElementById('total_proteins').value,
+                AlbuminGlobulinRatio: document.getElementById('agr').value
+            };
+
+            const response = await fetch('/api/predict/general', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patientData)
+            });
+
+            const data = await response.json();
+            
+            if (data.status === "success") {
+                const resultsList = document.getElementById('results-list');
+                resultsList.innerHTML = ''; // Clear previous
+                
+                for (const [disease, prob] of Object.entries(data.probabilities)) {
+                    if (prob !== null) {
+                        const isHighRisk = prob > 50; // Threshold example
+                        resultsList.innerHTML += `
+                            <div class="result-item ${isHighRisk ? 'high-risk' : ''}">
+                                <span>${disease.replace(/([A-Z])/g, ' $1').trim()} Risk:</span>
+                                <span>${prob}%</span>
+                            </div>
+                        `;
+                    }
+                }
+                document.getElementById('results-container').style.display = 'block';
+            } else {
+                alert("Error from server: " + data.message);
+            }
+        } catch (error) {
+            alert("Network error. Ensure your backend is running.");
+            console.error(error);
+        } finally {
+            btn.innerText = "Calculate Risk Probabilities";
+            btn.style.backgroundColor = "#17324d";
+        }
+    }
+</script>
+</body>
+</html>
