@@ -11,9 +11,24 @@ models_dir = base_dir
 
 load_errors = {}
 
+import io
+import pickle
+
+# Custom unpickler to fix the 'STACK_GLOBAL requires str' error across Python versions
+class SafeUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if isinstance(module, bytes):
+            module = module.decode('utf-8')
+        if isinstance(name, bytes):
+            name = name.decode('utf-8')
+        return super().find_class(module, name)
+
 def load_model(filename):
     try:
-        return pickle.load(open(os.path.join(models_dir, filename), 'rb'))
+        path = os.path.join(models_dir, filename)
+        with open(path, 'rb') as f:
+            content = f.read()
+        return SafeUnpickler(io.BytesIO(content)).load()
     except Exception as e:
         load_errors[filename] = str(e)
         return None
