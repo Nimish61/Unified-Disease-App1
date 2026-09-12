@@ -18,12 +18,12 @@ def load_model(filename):
         return None
 
 models = {
-    'diabetes': load_model('diabetes_model.pkl'),
-    'heart_failure': load_model('heart_failure_model.pkl'),
-    'kidney': load_model('kidney_model.pkl'),
-    'heart': load_model('heart_model.pkl'),
-    'stroke': load_model('stroke_model.pkl'),
-    'liver': load_model('liver_model.pkl')
+    'diabetes': load_model('Diabetes_best_model.pkl'),
+    'heart_failure': load_model('Heart_Failure_best_model.pkl'),
+    'kidney': load_model('CKD_best_model.pkl'),
+    'heart': load_model('Heart_best_model.pkl'),
+    'stroke': load_model('Stroke_best_model.pkl'),
+    'liver': load_model('Liver_model.pkl')
 }
 
 @app.route('/api/predict/general', methods=['POST'])
