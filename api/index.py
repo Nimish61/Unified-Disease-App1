@@ -30,6 +30,11 @@ models = {
 
 import urllib.error # <-- Make sure this is imported at the top of your file
 
+import urllib.request
+import urllib.error
+import json
+import os
+
 def generate_ai_routine(probabilities, patient_vitals):
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
@@ -37,61 +42,68 @@ def generate_ai_routine(probabilities, patient_vitals):
 
     high_risks = {k: v for k, v in probabilities.items() if v >= 20.0}
     
+    # Prompt is condensed to ensure the AI generates the response in under 8 seconds
     prompt = f"""
-    You are an AI clinical wellness and lifestyle advisor. Based on the machine learning risk assessment and vitals below, generate a clear, actionable, and encouraging health routine.
+    You are an AI wellness advisor. Based on the machine learning risk assessment and vitals below, generate a very concise, actionable health routine. Keep it under 250 words.
 
     PATIENT VITALS:
     - Age: {patient_vitals.get('Age', 'N/A')}
     - BMI: {patient_vitals.get('BMI', 'N/A')}
     - Blood Pressure: {patient_vitals.get('BloodPressure', 'N/A')} mmHg
     - Glucose: {patient_vitals.get('Glucose', 'N/A')} mg/dL
-    - Smoking: {'Yes' if patient_vitals.get('Smoking') == 1 else 'No'}
 
     ASSESSED DISEASE RISKS:
     {json.dumps(probabilities, indent=2)}
 
     HIGH RISK ALERTS (>= 20%):
-    {json.dumps(high_risks, indent=2) if high_risks else 'All scores under 20% (Low immediate risk)'}
+    {json.dumps(high_risks, indent=2) if high_risks else 'Low risk.'}
 
-    FORMAT YOUR RESPONSE IN CLEAN HTML (use <h4>, <p>, <ul>, <li>, <strong> tags; do NOT include ```html markdown tags):
-    1. Overall Clinical Impression (2-3 sentences)
-    2. Nutrition & Dietary Recommendations (focus on identified risks)
-    3. Physical Activity & Safe Exercise Plan
-    4. Lifestyle Modifications & Routine Habits
-    5. Follow-up Diagnostic Tests to Discuss with a Doctor
+    FORMAT YOUR RESPONSE IN CLEAN HTML (use <h4>, <p>, <ul>, <li> tags; NO markdown code blocks):
+    1. Nutrition
+    2. Exercise
+    3. Lifestyle Habit Changes
     """
 
+    # Using a definitively free, high-speed model to bypass balance restrictions and timeouts
     payload = {
-        "model": "google/gemini-1.5-flash", # <-- FIXED MODEL NAME
+        "model": "meta-llama/llama-3.1-8b-instruct:free", 
         "messages": [
-            {"role": "system", "content": "You are a professional medical lifestyle counselor. Provide preventive lifestyle routines without diagnosing directly."},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.4
+        "temperature": 0.3,
+        "max_tokens": 400
     }
 
     req = urllib.request.Request(
-        "[https://openrouter.ai/api/v1/chat/completions](https://openrouter.ai/api/v1/chat/completions)",
+        "https://openrouter.ai/api/v1/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "[https://unified-disease-app1.vercel.app](https://unified-disease-app1.vercel.app)",
+            "HTTP-Referer": "https://unified-disease-app1.vercel.app",
             "X-Title": "VitaPredict Health AI"
         },
         method="POST"
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=25) as response:
+        # 8-second timeout prevents Vercel from hard-crashing the server at 10 seconds
+        with urllib.request.urlopen(req, timeout=8) as response:
             res_data = json.loads(response.read().decode("utf-8"))
-            return res_data["choices"][0]["message"]["content"]
+            
+            # Safely check if the expected AI output exists in the JSON
+            if "choices" in res_data and len(res_data["choices"]) > 0:
+                return res_data["choices"][0]["message"]["content"]
+            else:
+                return f"<p style='color: #d9534f;'><strong>OpenRouter Format Error:</strong> {json.dumps(res_data)}</p>"
+                
     except urllib.error.HTTPError as e:
-        # <-- THIS WILL CATCH THE EXACT OPENROUTER ERROR (e.g. Insufficient Balance)
-        error_msg = e.read().decode("utf-8")
-        return f"<p style='color: #d9534f;'><strong>OpenRouter API Error {e.code}:</strong> {error_msg}</p>"
+        # Unmasks OpenRouter-specific errors (like 402 Balance or 401 Unauthorized)
+        error_body = e.read().decode("utf-8")
+        return f"<p style='color: #d9534f;'><strong>OpenRouter HTTP Error {e.code}:</strong> {error_body}</p>"
     except Exception as e:
-        return f"<p style='color: #d9534f;'>Could not generate routine at this time: {str(e)}</p>"
+        # Prints the exact Python exception class if it fails locally
+        return f"<p style='color: #d9534f;'><strong>Connection Error:</strong> {str(e.__class__.__name__)} - {str(e)}</p>"
 
 @app.route('/api/predict/general', methods=['POST'])
 def predict_general():
