@@ -66,7 +66,7 @@ def generate_ai_routine(probabilities, patient_vitals):
 
     # Using a definitively free, high-speed model to bypass balance restrictions and timeouts
     payload = {
-        "model": "meta-llama/llama-3.1-8b-instruct:free", 
+        "model": "google/gemma-2-9b-it:free", # Currently supported free model on OpenRouter
         "messages": [
             {"role": "user", "content": prompt}
         ],
