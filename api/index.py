@@ -1,53 +1,36 @@
 from flask import Flask, request, jsonify
-import pickle
+import joblib
 import pandas as pd
 import os
 
 app = Flask(__name__)
 
-# FIX: Set models_dir to base_dir since your .pkl files are right next to index.py
 base_dir = os.path.dirname(os.path.abspath(__file__))
 models_dir = base_dir 
 
 load_errors = {}
 
-import io
-import pickle
-
-# Custom unpickler to fix the 'STACK_GLOBAL requires str' error across Python versions
-class SafeUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        if isinstance(module, bytes):
-            module = module.decode('utf-8')
-        if isinstance(name, bytes):
-            name = name.decode('utf-8')
-        return super().find_class(module, name)
-
 def load_model(filename):
     try:
-        path = os.path.join(models_dir, filename)
-        with open(path, 'rb') as f:
-            content = f.read()
-        return SafeUnpickler(io.BytesIO(content)).load()
+        return joblib.load(os.path.join(models_dir, filename))
     except Exception as e:
         load_errors[filename] = str(e)
         return None
 
-# Mapped precisely to the filenames in your screenshot
+# Updated to look for .joblib extensions
 models = {
-    'diabetes': load_model('Diabetes_best_model.pkl'),
-    'heart_failure': load_model('Heart_Failure_best_model.pkl'),
-    'kidney': load_model('CKD_best_model.pkl'),
-    'heart': load_model('Heart_best_model.pkl'),
-    'stroke': load_model('Stroke_best_model.pkl'),
-    'liver': load_model('Liver_best_model.pkl')
+    'diabetes': load_model('Diabetes_best_model.joblib'),
+    'heart_failure': load_model('Heart_Failure_best_model.joblib'),
+    'kidney': load_model('CKD_best_model.joblib'),
+    'heart': load_model('Heart_best_model.joblib'),
+    'stroke': load_model('Stroke_best_model.joblib'),
+    'liver': load_model('Liver_best_model.joblib')
 }
 
 @app.route('/api/predict/general', methods=['POST'])
 def predict_general():
-    # Force the error to display on the frontend if models didn't load
     if load_errors:
-        return jsonify({"status": "error", "message": f"Failed to load .pkl files. Errors: {load_errors}"}), 400
+        return jsonify({"status": "error", "message": f"Failed to load .joblib files. Errors: {load_errors}"}), 400
 
     data = request.json
     results = {}
@@ -60,7 +43,7 @@ def predict_general():
             return float(default)
 
     try:
-        # 1. DIABETES MAPPING (Using Pandas DataFrame)
+        # 1. DIABETES
         if models['diabetes']:
             diabetes_df = pd.DataFrame([{
                 'Pregnancies': get_val('Pregnancies'), 
@@ -74,7 +57,7 @@ def predict_general():
             }])
             results['Diabetes'] = round(models['diabetes'].predict_proba(diabetes_df)[0][1] * 100, 2)
 
-        # 2. HEART FAILURE MAPPING
+        # 2. HEART FAILURE
         if models['heart_failure']:
             hf_df = pd.DataFrame([{
                 'age': get_val('Age'), 
@@ -92,7 +75,7 @@ def predict_general():
             }])
             results['Heart Failure'] = round(models['heart_failure'].predict_proba(hf_df)[0][1] * 100, 2)
 
-        # 3. KIDNEY MAPPING
+        # 3. KIDNEY
         if models['kidney']:
             kidney_df = pd.DataFrame([{
                 'Age': get_val('Age'), 'BloodPressure': get_val('BloodPressure'), 'SpecificGravity': get_val('SpecificGravity', 1.0),
@@ -106,7 +89,7 @@ def predict_general():
             }])
             results['Kidney Disease'] = round(models['kidney'].predict_proba(kidney_df)[0][1] * 100, 2)
 
-        # 4. HEART DISEASE MAPPING
+        # 4. HEART DISEASE
         if models['heart']:
             heart_df = pd.DataFrame([{
                 'Age': get_val('Age'), 'Sex': get_val('Gender'), 'ChestPainType': get_val('ChestPainType'),
@@ -116,7 +99,7 @@ def predict_general():
             }])
             results['Heart Disease'] = round(models['heart'].predict_proba(heart_df)[0][1] * 100, 2)
 
-        # 5. STROKE MAPPING
+        # 5. STROKE
         if models['stroke']:
             stroke_df = pd.DataFrame([{
                 'gender': get_val('Gender'), 'age': get_val('Age'), 'hypertension': get_val('Hypertension'),
@@ -125,7 +108,7 @@ def predict_general():
             }])
             results['Stroke'] = round(models['stroke'].predict_proba(stroke_df)[0][1] * 100, 2)
 
-        # 6. LIVER MAPPING
+        # 6. LIVER
         if models['liver']:
             liver_df = pd.DataFrame([{
                 'age': get_val('Age'), 'gender': get_val('Gender'), 'Total_bilirubin': get_val('TotalBilirubin'),
