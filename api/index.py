@@ -109,7 +109,7 @@ def generate_ai_routine(probabilities, patient_vitals):
 
     try:
         # 8-second timeout prevents Vercel from hard-crashing the server at 10 seconds
-        with urllib.request.urlopen(req, timeout=8) as response:
+        with urllib.request.urlopen(req, timeout=50) as response:
             res_data = json.loads(response.read().decode("utf-8"))
             
             # Safely check if the expected AI output exists in the JSON
