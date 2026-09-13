@@ -28,12 +28,13 @@ models = {
     'liver': load_model('Liver_best_model.joblib')
 }
 
+import urllib.error # <-- Make sure this is imported at the top of your file
+
 def generate_ai_routine(probabilities, patient_vitals):
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         return "OpenRouter API key is not configured in Vercel environment variables."
 
-    # Identify diseases with higher probabilities
     high_risks = {k: v for k, v in probabilities.items() if v >= 20.0}
     
     prompt = f"""
@@ -61,7 +62,7 @@ def generate_ai_routine(probabilities, patient_vitals):
     """
 
     payload = {
-        "model": "google/gemini-2.5-flash", # You can also use "openai/gpt-4o-mini"
+        "model": "google/gemini-1.5-flash", # <-- FIXED MODEL NAME
         "messages": [
             {"role": "system", "content": "You are a professional medical lifestyle counselor. Provide preventive lifestyle routines without diagnosing directly."},
             {"role": "user", "content": prompt}
@@ -85,8 +86,12 @@ def generate_ai_routine(probabilities, patient_vitals):
         with urllib.request.urlopen(req, timeout=25) as response:
             res_data = json.loads(response.read().decode("utf-8"))
             return res_data["choices"][0]["message"]["content"]
+    except urllib.error.HTTPError as e:
+        # <-- THIS WILL CATCH THE EXACT OPENROUTER ERROR (e.g. Insufficient Balance)
+        error_msg = e.read().decode("utf-8")
+        return f"<p style='color: #d9534f;'><strong>OpenRouter API Error {e.code}:</strong> {error_msg}</p>"
     except Exception as e:
-        return f"<p class='text-danger'>Could not generate routine at this time: {str(e)}</p>"
+        return f"<p style='color: #d9534f;'>Could not generate routine at this time: {str(e)}</p>"
 
 @app.route('/api/predict/general', methods=['POST'])
 def predict_general():
