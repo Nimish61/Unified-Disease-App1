@@ -42,7 +42,26 @@ def generate_ai_routine(probabilities, patient_vitals):
 
     high_risks = {k: v for k, v in probabilities.items() if v >= 20.0}
     
-    # Prompt is condensed to ensure the AI generates the response in under 8 seconds
+    # 1. Define the top drivers you found during your SHAP/LIME analysis
+    shap_lime_mappings = {
+        'Diabetes': 'Glucose, BMI, and Age',
+        'Heart Failure': 'Follow-up Time, Serum Creatinine, and Ejection Fraction',
+        'Kidney Disease': 'Specific Gravity and Red Blood Cells',
+        'Heart Disease': 'Chest Pain Type, Number of Major Vessels, and Max Heart Rate',
+        'Stroke': 'Age, Average Glucose Level, and BMI',
+        'Liver Disease': 'Alamine Aminotransferase (ALT), AST, and Total Bilirubin'
+    }
+    
+    # 2. Build a specific instruction string for the LLM based on the patient's high risks
+    driver_instructions = ""
+    if high_risks:
+        driver_instructions = "Based on our SHAP/LIME XAI analysis, the primary physiological parameters driving this patient's risk scores are:\n"
+        for disease in high_risks.keys():
+            if disease in shap_lime_mappings:
+                driver_instructions += f"- {disease}: {shap_lime_mappings[disease]}\n"
+        driver_instructions += "\nCRITICAL INSTRUCTION: Your routine MUST specifically target and aim to improve these exact parameters."
+
+    # 3. Inject the driver instructions into the prompt
     prompt = f"""
     You are an AI wellness advisor. Based on the machine learning risk assessment and vitals below, generate a very concise, actionable health routine. Keep it under 250 words.
 
@@ -58,21 +77,24 @@ def generate_ai_routine(probabilities, patient_vitals):
     HIGH RISK ALERTS (>= 20%):
     {json.dumps(high_risks, indent=2) if high_risks else 'Low risk.'}
 
+    {driver_instructions}
+
     FORMAT YOUR RESPONSE IN CLEAN HTML (use <h4>, <p>, <ul>, <li> tags; NO markdown code blocks):
-    1. Nutrition
-    2. Exercise
+    1. Targeted Nutrition
+    2. Specific Exercise
     3. Lifestyle Habit Changes
     """
 
-    # Using a definitively free, high-speed model to bypass balance restrictions and timeouts
     payload = {
-        "model": "openrouter/free", # Automatically routes to an online free model
+        "model": "openrouter/free", 
         "messages": [
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.3,
         "max_tokens": 400
     }
+
+    # ... (Keep your existing urllib request and try/except block here) ...
     req = urllib.request.Request(
         "https://openrouter.ai/api/v1/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
