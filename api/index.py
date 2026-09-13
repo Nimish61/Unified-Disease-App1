@@ -29,7 +29,7 @@ models = {
 }
 
 def generate_ai_routine(probabilities, patient_vitals):
-    api_key = os.environ.get("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")
+    api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         return "OpenRouter API key is not configured in Vercel environment variables."
 
