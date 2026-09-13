@@ -70,6 +70,10 @@
         button:hover {
             background-color: #2d536d;
         }
+        button:disabled {
+            background-color: #526777;
+            cursor: not-allowed;
+        }
         #results-container {
             margin-top: 30px;
             padding: 20px;
@@ -227,120 +231,13 @@
         <p style="font-size: 12px; color: #666; margin-top: 15px;">*If any probability exceeds the risk threshold, the GenAI integration will automatically generate your personalized health routine here.</p>
     </div>
     <div id="routine-container" style="display: none; margin-top: 25px; padding: 20px; background: #ffffff; border-radius: 8px; border-left: 5px solid #0056b3; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <h3 style="color: #0056b3; margin-top: 0;">AI-Generated Lifestyle & Health Routine</h3>
-    <div id="routine-content" style="line-height: 1.6; color: #333;"></div>
+        <h3 style="color: #0056b3; margin-top: 0;">AI-Generated Lifestyle & Health Routine</h3>
+        <div id="routine-content" style="line-height: 1.6; color: #333;"></div>
+    </div>
 </div>
 
-
+<!-- Only load the external script -->
 <script src="script.js"></script>
 
-<!-- Inline script modification for the frontend to handle the response -->
-<script>
-    // Overriding the script.js console log to visually update the HTML
-    async function calculateRisk() {
-        const btn = document.querySelector('button');
-        btn.innerText = "Analyzing Parameters...";
-        btn.style.backgroundColor = "#526777";
-
-        // (The payload object from your script.js goes here, but calling the original function works if defined. 
-        // For demonstration, we will intercept the fetch call behavior below.)
-        
-        try {
-            // Using the exact payload keys from your script.js
-            const patientData = {
-                Age: document.getElementById('age').value,
-                Gender: document.getElementById('gender').value,
-                BMI: document.getElementById('bmi').value,
-                BloodPressure: document.getElementById('blood_pressure').value,
-                Glucose: document.getElementById('glucose').value,
-                Insulin: document.getElementById('insulin').value,
-                Pregnancies: document.getElementById('pregnancies').value,
-                SkinThickness: document.getElementById('skin_thickness').value,
-                DiabetesPedigreeFunction: document.getElementById('dpf').value,
-                Anaemia: document.getElementById('anaemia').value,
-                CreatininePhosphokinase: document.getElementById('cpk').value,
-                DiabetesMellitus: document.getElementById('diabetes_history').value,
-                EjectionFraction: document.getElementById('ejection_fraction').value,
-                Hypertension: document.getElementById('hypertension').value,
-                Platelets: document.getElementById('platelets').value,
-                SerumCreatinine: document.getElementById('serum_creatinine').value,
-                SerumSodium: document.getElementById('serum_sodium').value,
-                Smoking: document.getElementById('smoking').value,
-                FollowUpTime: document.getElementById('follow_up_time').value,
-                SpecificGravity: document.getElementById('specific_gravity').value,
-                Albumin: document.getElementById('albumin').value,
-                UrineSugar: document.getElementById('urine_sugar').value,
-                RedBloodCells: document.getElementById('rbc').value,
-                PusCell: document.getElementById('pus_cell').value,
-                PusCellClumps: document.getElementById('pus_cell_clumps').value,
-                Bacteria: document.getElementById('bacteria').value,
-                BloodGlucoseRandom: document.getElementById('bgr').value,
-                BloodUrea: document.getElementById('blood_urea').value,
-                Potassium: document.getElementById('potassium').value,
-                Hemoglobin: document.getElementById('hemoglobin').value,
-                PackedCellVolume: document.getElementById('pcv').value,
-                WhiteBloodCellCount: document.getElementById('wbc_count').value,
-                RedBloodCellCount: document.getElementById('rbc_count').value,
-                CoronaryArteryDisease: document.getElementById('cad_history').value,
-                Appetite: document.getElementById('appetite').value,
-                PedalEdema: document.getElementById('pedal_edema').value,
-                ChestPainType: document.getElementById('chest_pain_type').value,
-                Cholesterol: document.getElementById('cholesterol').value,
-                FastingBloodSugar: document.getElementById('fbs').value,
-                RestECG: document.getElementById('rest_ecg').value,
-                MaxHeartRate: document.getElementById('max_heart_rate').value,
-                ExerciseAngina: document.getElementById('exercise_angina').value,
-                Oldpeak: document.getElementById('oldpeak').value,
-                Slope: document.getElementById('slope').value,
-                NumMajorVessels: document.getElementById('num_major_vessels').value,
-                Thalassemia: document.getElementById('thalassemia').value,
-                EverMarried: document.getElementById('ever_married').value,
-                WorkType: document.getElementById('work_type').value,
-                ResidenceType: document.getElementById('residence_type').value,
-                TotalBilirubin: document.getElementById('total_bilirubin').value,
-                DirectBilirubin: document.getElementById('direct_bilirubin').value,
-                AlkalinePhosphotase: document.getElementById('alkaline_phosphotase').value,
-                AlamineAminotransferase: document.getElementById('alt').value,
-                AspartateAminotransferase: document.getElementById('ast').value,
-                TotalProteins: document.getElementById('total_proteins').value,
-                AlbuminGlobulinRatio: document.getElementById('agr').value
-            };
-
-            const response = await fetch('/api/predict/general', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(patientData)
-            });
-
-            const data = await response.json();
-            
-            if (data.status === "success") {
-                const resultsList = document.getElementById('results-list');
-                resultsList.innerHTML = ''; // Clear previous
-                
-                for (const [disease, prob] of Object.entries(data.probabilities)) {
-                    if (prob !== null) {
-                        const isHighRisk = prob > 50; // Threshold example
-                        resultsList.innerHTML += `
-                            <div class="result-item ${isHighRisk ? 'high-risk' : ''}">
-                                <span>${disease.replace(/([A-Z])/g, ' $1').trim()} Risk:</span>
-                                <span>${prob}%</span>
-                            </div>
-                        `;
-                    }
-                }
-                document.getElementById('results-container').style.display = 'block';
-            } else {
-                alert("Error from server: " + data.message);
-            }
-        } catch (error) {
-            alert("Network error. Ensure your backend is running.");
-            console.error(error);
-        } finally {
-            btn.innerText = "Calculate Risk Probabilities";
-            btn.style.backgroundColor = "#17324d";
-        }
-    }
-</script>
 </body>
 </html>
