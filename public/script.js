@@ -1,9 +1,14 @@
 async function calculateRisk() {
-    // Collect all inputs from the HTML form elements
-    // Ensure your HTML <input> tags have these exact IDs
+    // 1. Show loading state on the button (AI takes a few seconds)
+    const calcButton = document.querySelector('button'); // Adjust if your button has a specific ID
+    const originalText = calcButton.innerText;
+    calcButton.innerText = "Analyzing & Generating AI Routine...";
+    calcButton.disabled = true;
+
+    // 2. Collect all inputs from the HTML form elements
     const patientData = {
         Age: document.getElementById('age').value,
-        Gender: document.getElementById('gender').value, // e.g., 0 for Female, 1 for Male based on your mapping
+        Gender: document.getElementById('gender').value, 
         BMI: document.getElementById('bmi').value,
         BloodPressure: document.getElementById('blood_pressure').value,
         Glucose: document.getElementById('glucose').value,
@@ -11,15 +16,15 @@ async function calculateRisk() {
         Pregnancies: document.getElementById('pregnancies').value,
         SkinThickness: document.getElementById('skin_thickness').value,
         DiabetesPedigreeFunction: document.getElementById('dpf').value,
-        Anaemia: document.getElementById('anaemia').value, // 0 or 1
+        Anaemia: document.getElementById('anaemia').value, 
         CreatininePhosphokinase: document.getElementById('cpk').value,
-        DiabetesMellitus: document.getElementById('diabetes_history').value, // 0 or 1
+        DiabetesMellitus: document.getElementById('diabetes_history').value, 
         EjectionFraction: document.getElementById('ejection_fraction').value,
-        Hypertension: document.getElementById('hypertension').value, // 0 or 1
+        Hypertension: document.getElementById('hypertension').value, 
         Platelets: document.getElementById('platelets').value,
         SerumCreatinine: document.getElementById('serum_creatinine').value,
         SerumSodium: document.getElementById('serum_sodium').value,
-        Smoking: document.getElementById('smoking').value, // 0 or 1
+        Smoking: document.getElementById('smoking').value, 
         FollowUpTime: document.getElementById('follow_up_time').value,
         SpecificGravity: document.getElementById('specific_gravity').value,
         Albumin: document.getElementById('albumin').value,
@@ -72,13 +77,41 @@ async function calculateRisk() {
         const data = await response.json();
         
         if (data.status === "success") {
-            console.log("Risk Probabilities:", data.probabilities);
-            // Display results to the user here
-            // e.g., document.getElementById('diabetes-result').innerText = data.probabilities.Diabetes + "%";
+            const resultsList = document.getElementById('results-list');
+            resultsList.innerHTML = ''; 
+            
+            for (const [disease, prob] of Object.entries(data.probabilities)) {
+                if (prob !== null) {
+                    const isHighRisk = prob > 50; 
+                    resultsList.innerHTML += `
+                        <div class="result-item ${isHighRisk ? 'high-risk' : ''}" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eef2f5;">
+                            <span>${disease} Risk:</span>
+                            <strong>${prob}%</strong>
+                        </div>
+                    `;
+                }
+            }
+            document.getElementById('results-container').style.display = 'block';
+
+            // Render AI Lifestyle Routine
+            if (data.routine) {
+                const routineBox = document.getElementById('routine-container');
+                const routineContent = document.getElementById('routine-content');
+                routineContent.innerHTML = data.routine;
+                routineBox.style.display = 'block';
+                routineBox.scrollIntoView({ behavior: 'smooth' });
+            }
         } else {
-            console.error("Backend Error:", data.message);
+            alert("Error: " + data.message);
         }
+
     } catch (error) {
-        console.error("Network Error:", error);
+        // Missing block from your code added here
+        console.error("Fetch error:", error);
+        alert("A network error occurred. Please check the console.");
+    } finally {
+        // Reset the button after the API call finishes
+        calcButton.innerText = originalText;
+        calcButton.disabled = false;
     }
 }
