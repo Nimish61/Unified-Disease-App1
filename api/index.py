@@ -4,6 +4,7 @@ import pandas as pd
 import os
 import json
 import urllib.request
+import urllib.error
 
 app = Flask(__name__)
 
@@ -28,13 +29,6 @@ models = {
     'liver': load_model('Liver_best_model.joblib')
 }
 
-import urllib.error # <-- Make sure this is imported at the top of your file
-
-import urllib.request
-import urllib.error
-import json
-import os
-
 def generate_ai_routine(probabilities, patient_vitals):
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
@@ -42,30 +36,28 @@ def generate_ai_routine(probabilities, patient_vitals):
 
     high_risks = {k: v for k, v in probabilities.items() if v >= 20.0}
     
-    shap_lime_mappings = {
-        'Diabetes': 'Glucose, BMI, Age',
-        'Heart Failure': 'Follow-up Time, Serum Creatinine, Ejection Fraction',
-        'Kidney Disease': 'Specific Gravity, Red Blood Cells',
-        'Heart Disease': 'Chest Pain Type, Max Heart Rate',
-        'Stroke': 'Average Glucose Level, BMI, Age',
-        'Liver Disease': 'ALT, AST, Total Bilirubin'
-    }
-    
-    drivers = [f"{d}: {shap_lime_mappings[d]}" for d in high_risks.keys() if d in shap_lime_mappings]
-    driver_str = "; ".join(drivers) if drivers else "None flagged"
-
-    # Ultra-concise prompt for sub-3-second generation
+    # Original, lighter prompt that processes quickly
     prompt = f"""
-    Concise clinical advisor.
-    Vitals: Age {patient_vitals.get('Age','N/A')}, BMI {patient_vitals.get('BMI','N/A')}, BP {patient_vitals.get('BloodPressure','N/A')}, Glucose {patient_vitals.get('Glucose','N/A')}.
-    High Risks: {json.dumps(high_risks)}
-    XAI Drivers: {driver_str}
+    You are an AI wellness advisor. Based on the machine learning risk assessment and vitals below, generate a very concise, actionable health routine. Keep it under 250 words.
 
-    Write under 120 words in clean HTML (use <h4>, <ul>, <li>, <strong>; NO markdown code fences):
+    PATIENT VITALS:
+    - Age: {patient_vitals.get('Age', 'N/A')}
+    - BMI: {patient_vitals.get('BMI', 'N/A')}
+    - Blood Pressure: {patient_vitals.get('BloodPressure', 'N/A')} mmHg
+    - Glucose: {patient_vitals.get('Glucose', 'N/A')} mg/dL
+
+    ASSESSED DISEASE RISKS:
+    {json.dumps(probabilities, indent=2)}
+
+    HIGH RISK ALERTS (>= 20%):
+    {json.dumps(high_risks, indent=2) if high_risks else 'Low risk.'}
+
+    FORMAT YOUR RESPONSE IN CLEAN HTML (use <h4>, <p>, <ul>, <li> tags; NO markdown code blocks):
     1. Targeted Nutrition
-    2. Physical Activity
-    3. Lifestyle Habit
+    2. Specific Exercise
+    3. Lifestyle Habit Changes
     """
+
     payload = {
         "model": "openrouter/free", 
         "messages": [
@@ -75,7 +67,6 @@ def generate_ai_routine(probabilities, patient_vitals):
         "max_tokens": 400
     }
 
-    # ... (Keep your existing urllib request and try/except block here) ...
     req = urllib.request.Request(
         "https://openrouter.ai/api/v1/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
@@ -89,22 +80,19 @@ def generate_ai_routine(probabilities, patient_vitals):
     )
 
     try:
-        # 50-second timeout prevents Vercel from hard-crashing the server at 10 seconds
-        with urllib.request.urlopen(req, timeout=50) as response:
+        # 8-second timeout keeps it safely under Vercel's 10-second limit
+        with urllib.request.urlopen(req, timeout=8) as response:
             res_data = json.loads(response.read().decode("utf-8"))
             
-            # Safely check if the expected AI output exists in the JSON
             if "choices" in res_data and len(res_data["choices"]) > 0:
                 return res_data["choices"][0]["message"]["content"]
             else:
                 return f"<p style='color: #d9534f;'><strong>OpenRouter Format Error:</strong> {json.dumps(res_data)}</p>"
                 
     except urllib.error.HTTPError as e:
-        # Unmasks OpenRouter-specific errors (like 402 Balance or 401 Unauthorized)
         error_body = e.read().decode("utf-8")
         return f"<p style='color: #d9534f;'><strong>OpenRouter HTTP Error {e.code}:</strong> {error_body}</p>"
     except Exception as e:
-        # Prints the exact Python exception class if it fails locally
         return f"<p style='color: #d9534f;'><strong>Connection Error:</strong> {str(e.__class__.__name__)} - {str(e)}</p>"
 
 @app.route('/api/predict/general', methods=['POST'])
@@ -182,7 +170,6 @@ def predict_general():
             }])
             results['Liver Disease'] = round(models['liver'].predict_proba(liver_df)[0][1] * 100, 2)
 
-        # Generate lifestyle routine via OpenRouter
         ai_routine = generate_ai_routine(results, data)
 
         return jsonify({
