@@ -42,49 +42,30 @@ def generate_ai_routine(probabilities, patient_vitals):
 
     high_risks = {k: v for k, v in probabilities.items() if v >= 20.0}
     
-    # 1. Define the top drivers you found during your SHAP/LIME analysis
     shap_lime_mappings = {
-        'Diabetes': 'Glucose, BMI, and Age',
-        'Heart Failure': 'Follow-up Time, Serum Creatinine, and Ejection Fraction',
-        'Kidney Disease': 'Specific Gravity and Red Blood Cells',
-        'Heart Disease': 'Chest Pain Type, Number of Major Vessels, and Max Heart Rate',
-        'Stroke': 'Age, Average Glucose Level, and BMI',
-        'Liver Disease': 'Alamine Aminotransferase (ALT), AST, and Total Bilirubin'
+        'Diabetes': 'Glucose, BMI, Age',
+        'Heart Failure': 'Follow-up Time, Serum Creatinine, Ejection Fraction',
+        'Kidney Disease': 'Specific Gravity, Red Blood Cells',
+        'Heart Disease': 'Chest Pain Type, Max Heart Rate',
+        'Stroke': 'Average Glucose Level, BMI, Age',
+        'Liver Disease': 'ALT, AST, Total Bilirubin'
     }
     
-    # 2. Build a specific instruction string for the LLM based on the patient's high risks
-    driver_instructions = ""
-    if high_risks:
-        driver_instructions = "Based on our SHAP/LIME XAI analysis, the primary physiological parameters driving this patient's risk scores are:\n"
-        for disease in high_risks.keys():
-            if disease in shap_lime_mappings:
-                driver_instructions += f"- {disease}: {shap_lime_mappings[disease]}\n"
-        driver_instructions += "\nCRITICAL INSTRUCTION: Your routine MUST specifically target and aim to improve these exact parameters."
+    drivers = [f"{d}: {shap_lime_mappings[d]}" for d in high_risks.keys() if d in shap_lime_mappings]
+    driver_str = "; ".join(drivers) if drivers else "None flagged"
 
-    # 3. Inject the driver instructions into the prompt
+    # Ultra-concise prompt for sub-3-second generation
     prompt = f"""
-    You are an AI wellness advisor. Based on the machine learning risk assessment and vitals below, generate a very concise, actionable health routine. Keep it under 250 words.
+    Concise clinical advisor.
+    Vitals: Age {patient_vitals.get('Age','N/A')}, BMI {patient_vitals.get('BMI','N/A')}, BP {patient_vitals.get('BloodPressure','N/A')}, Glucose {patient_vitals.get('Glucose','N/A')}.
+    High Risks: {json.dumps(high_risks)}
+    XAI Drivers: {driver_str}
 
-    PATIENT VITALS:
-    - Age: {patient_vitals.get('Age', 'N/A')}
-    - BMI: {patient_vitals.get('BMI', 'N/A')}
-    - Blood Pressure: {patient_vitals.get('BloodPressure', 'N/A')} mmHg
-    - Glucose: {patient_vitals.get('Glucose', 'N/A')} mg/dL
-
-    ASSESSED DISEASE RISKS:
-    {json.dumps(probabilities, indent=2)}
-
-    HIGH RISK ALERTS (>= 20%):
-    {json.dumps(high_risks, indent=2) if high_risks else 'Low risk.'}
-
-    {driver_instructions}
-
-    FORMAT YOUR RESPONSE IN CLEAN HTML (use <h4>, <p>, <ul>, <li> tags; NO markdown code blocks):
+    Write under 120 words in clean HTML (use <h4>, <ul>, <li>, <strong>; NO markdown code fences):
     1. Targeted Nutrition
-    2. Specific Exercise
-    3. Lifestyle Habit Changes
+    2. Physical Activity
+    3. Lifestyle Habit
     """
-
     payload = {
         "model": "openrouter/free", 
         "messages": [
