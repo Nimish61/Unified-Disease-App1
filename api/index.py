@@ -66,14 +66,13 @@ def generate_ai_routine(probabilities, patient_vitals):
 
     # Using a definitively free, high-speed model to bypass balance restrictions and timeouts
     payload = {
-        "model": "mistralai/mistral-7b-instruct:free", # Highly stable free endpoint
+        "model": "openrouter/free", # Automatically routes to an online free model
         "messages": [
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.3,
         "max_tokens": 400
     }
-
     req = urllib.request.Request(
         "https://openrouter.ai/api/v1/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
