@@ -1,6 +1,6 @@
 async function calculateRisk() {
-    // 1. Show loading state on the button (AI takes a few seconds)
-    const calcButton = document.querySelector('button'); // Adjust if your button has a specific ID
+    // 1. Show loading state on the button
+    const calcButton = document.querySelector('button'); 
     const originalText = calcButton.innerText;
     calcButton.innerText = "Analyzing & Generating AI Routine...";
     calcButton.disabled = true;
@@ -80,17 +80,39 @@ async function calculateRisk() {
             const resultsList = document.getElementById('results-list');
             resultsList.innerHTML = ''; 
             
-            for (const [disease, prob] of Object.entries(data.probabilities)) {
-                if (prob !== null) {
-                    const isHighRisk = prob > 50; 
-                    resultsList.innerHTML += `
-                        <div class="result-item ${isHighRisk ? 'high-risk' : ''}" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eef2f5;">
-                            <span>${disease} Risk:</span>
-                            <strong>${prob}%</strong>
+            // Loop through the new 'predictions' object structure
+            for (const [disease, details] of Object.entries(data.predictions)) {
+                const prob = details.probability;
+                const conf = details.confidence;
+                const status = details.status;
+                const isHighRisk = prob >= 50; 
+                
+                // Enhanced UI to show Probability, Confidence, and Status
+                resultsList.innerHTML += `
+                    <div class="result-item ${isHighRisk ? 'high-risk' : ''}" style="display: flex; flex-direction: column; padding: 12px 0; border-bottom: 1px solid #eef2f5;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; font-size: 1.1em;">${disease}</span>
+                            <strong style="font-size: 1.2em; color: ${isHighRisk ? '#d9534f' : '#28a745'};">${prob}%</strong>
                         </div>
-                    `;
-                }
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: #666; margin-top: 4px;">
+                            <span>Data Confidence: <strong>${conf}%</strong></span>
+                            <span style="font-weight: 500;">${status}</span>
+                        </div>
+                    </div>
+                `;
             }
+
+            // (Optional) Render Biomarker Alerts if any were caught
+            if (data.biomarker_alerts && Object.keys(data.biomarker_alerts).length > 0) {
+                let alertHtml = `<div style="background-color: #fff3cd; color: #856404; padding: 10px; margin-top: 15px; border-radius: 5px; border-left: 4px solid #ffeeba;">
+                                    <strong>⚠️ Critical Biomarkers Detected:</strong><ul style="margin: 5px 0 0 20px; padding: 0;">`;
+                for (const [marker, value] of Object.entries(data.biomarker_alerts)) {
+                    alertHtml += `<li>${marker}: ${value}</li>`;
+                }
+                alertHtml += `</ul></div>`;
+                resultsList.innerHTML += alertHtml;
+            }
+
             document.getElementById('results-container').style.display = 'block';
 
             // Render AI Lifestyle Routine
@@ -106,7 +128,6 @@ async function calculateRisk() {
         }
 
     } catch (error) {
-        // Missing block from your code added here
         console.error("Fetch error:", error);
         alert("A network error occurred. Please check the console.");
     } finally {
