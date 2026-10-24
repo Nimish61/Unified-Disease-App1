@@ -220,51 +220,40 @@ def predict_general():
             continue
 
         # 1. Check if critical/primary biomarkers exist
-        missing_critical = False
-        for crit in meta['critical_features']:
-            payload_key = meta['features'][crit]['payload_key']
-            val = data.get(payload_key)
-            if val in [None, '', 'null']:
-                missing_critical = True
-                break
+        # 1. Reject if critical features are missing
+    missing_critical = False
+    for crit in meta['critical_features']:
+        payload_key = meta['features'][crit]['payload_key']
+        val = data.get(payload_key)
+        if val in [None, '', 'null']:
+            missing_critical = True
+            break
 
-        if missing_critical:
-            continue  # Do not predict if primary anchor feature is absent
+    if missing_critical:
+        continue  # Completely skips evaluating this disease
 
-        # 2. Build model input row & calculate confidence
-        feature_row = {}
-        present_weight = 0.0
+    # 2. Build row, apply safe defaults, and calculate confidence
+    feature_row = {}
+    present_weight = 0.0
 
-        for feat_name, feat_meta in meta['features'].items():
-            val = data.get(feat_meta['payload_key'])
-            if val not in [None, '', 'null']:
-                try:
-                    parsed_val = float(val)
-                    feature_row[feat_name] = parsed_val
-                    present_weight += feat_meta['weight']
-
-                    # Identify out-of-range clinical flags
-                    if (
-                        (feat_name == 'Glucose' and parsed_val >= 126.0) or
-                        (feat_name == 'BMI' and parsed_val >= 30.0) or
-                        (feat_name == 'BloodPressure' and parsed_val >= 140.0) or
-                        (feat_name == 'SerumCreatinine' and parsed_val >= 1.4) or
-                        (feat_name == 'Direct_bilirubin' and parsed_val >= 0.5) or
-                        (feat_name == 'ejection_fraction' and parsed_val <= 40.0)
-                    ):
-                        biomarker_alerts[feat_meta['payload_key']] = parsed_val
-                except ValueError:
-                    feature_row[feat_name] = feat_meta['default']
-            else:
-                # Impute missing secondary features with verified population medians
+    for feat_name, feat_meta in meta['features'].items():
+        val = data.get(feat_meta['payload_key'])
+        if val not in [None, '', 'null']:
+            try:
+                parsed_val = float(val)
+                feature_row[feat_name] = parsed_val
+                present_weight += feat_meta['weight'] # Boosts confidence score
+            except ValueError:
                 feature_row[feat_name] = feat_meta['default']
+        else:
+            # Applies safe default, does NOT add to present_weight
+            feature_row[feat_name] = feat_meta['default']
 
-        confidence_score = round(min(present_weight * 100, 100.0), 1)
+    confidence_score = round(min(present_weight * 100, 100.0), 1)
 
-        # If missing features represent more than 35% of model importance, skip
-        if confidence_score < 65.0:
-            continue
-
+    # 3. Reject if overall data quality is too low
+    if confidence_score < 65.0:
+        continue  # Skips predicting if > 35% of model importance is missing
         # 3. Generate inference
         try:
             df_input = pd.DataFrame([feature_row])
