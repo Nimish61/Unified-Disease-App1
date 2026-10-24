@@ -67,7 +67,7 @@ DISEASE_METADATA = {
     },
     'Kidney Disease': {
         'model_key': 'kidney',
-        'critical_features': ['SerumCreatinine', 'SpecificGravity'],
+        'critical_features': ['SerumCreatinine'],
         'features': {
             'Age': {'weight': 0.05, 'default': 45.0, 'payload_key': 'Age'},
             'BloodPressure': {'weight': 0.04, 'default': 80.0, 'payload_key': 'BloodPressure'},
