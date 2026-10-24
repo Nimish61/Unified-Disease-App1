@@ -210,7 +210,7 @@ def generate_elaborate_6month_routine(evaluated_diseases, patient_vitals, alert_
         'model': 'openrouter/free',
         'messages': [{'role': 'user', 'content': prompt}],
         'temperature': 0.2,
-        'max_tokens': 550, # Dropped from 950 to avoid Vercel timeout
+        'max_tokens': 1200, # Increased from 550 to allow for a highly detailed routine
     }
 
     req = urllib.request.Request(
@@ -226,18 +226,12 @@ def generate_elaborate_6month_routine(evaluated_diseases, patient_vitals, alert_
     )
 
     try:
-        # Aggressive 6.5 second timeout to guarantee it finishes before Vercel kills the app
-        with urllib.request.urlopen(req, timeout=6.5) as response:
+        # Increased timeout to 55 seconds to give the LLM plenty of time to type
+        with urllib.request.urlopen(req, timeout=55.0) as response:
             res_data = json.loads(response.read().decode('utf-8'))
             if 'choices' in res_data and len(res_data['choices']) > 0:
                 return res_data['choices'][0]['message']['content']
             return f"<p style='color: #d9534f;'>Generation failed.</p>"
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode('utf-8')
-        return f"<p style='color: #d9534f;'><strong>OpenRouter API Error ({e.code}):</strong> {error_body}</p>"
-    except Exception as e:
-        return f"<p style='color: #d9534f;'><strong>Routine generation error:</strong> {str(e.__class__.__name__)} - {str(e)}</p>"
-
 @app.route('/api/predict/general', methods=['POST'])
 def predict_general():
     if load_errors:
