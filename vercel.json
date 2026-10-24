@@ -4,7 +4,7 @@
     { "source": "/(.*)", "destination": "/public/$1" }
   ],
   "functions": {
-    "api/**/*.py": {
+    "api/index.py": {
       "maxDuration": 60
     }
   }
