@@ -54,13 +54,13 @@ DISEASE_METADATA = {
         'model_key': 'heart_failure',
         'critical_features': ['ejection_fraction', 'serum_creatinine'],
         'features': {
-            'time': {'weight': 0.35, 'default': 115.0, 'payload_key': 'FollowUpTime'},
-            'serum_creatinine': {'weight': 0.22, 'default': 1.1, 'payload_key': 'SerumCreatinine'},
-            'ejection_fraction': {'weight': 0.20, 'default': 38.0, 'payload_key': 'EjectionFraction'},
-            'age': {'weight': 0.08, 'default': 60.0, 'payload_key': 'Age'},
-            'serum_sodium': {'weight': 0.05, 'default': 137.0, 'payload_key': 'SerumSodium'},
-            'creatinine_phosphokinase': {'weight': 0.03, 'default': 250.0, 'payload_key': 'CreatininePhosphokinase'},
-            'platelets': {'weight': 0.03, 'default': 262000.0, 'payload_key': 'Platelets'},
+            'time': {'weight': 0.35, 'default': 250.0, 'payload_key': 'FollowUpTime'}, # Changed to safe 250
+            'serum_creatinine': {'weight': 0.22, 'default': 1.0, 'payload_key': 'SerumCreatinine'},
+            'ejection_fraction': {'weight': 0.20, 'default': 55.0, 'payload_key': 'EjectionFraction'}, # Changed to safe 55
+            'age': {'weight': 0.08, 'default': 55.0, 'payload_key': 'Age'},
+            'serum_sodium': {'weight': 0.05, 'default': 140.0, 'payload_key': 'SerumSodium'},
+            'creatinine_phosphokinase': {'weight': 0.03, 'default': 150.0, 'payload_key': 'CreatininePhosphokinase'},
+            'platelets': {'weight': 0.03, 'default': 260000.0, 'payload_key': 'Platelets'},
             'high_blood_pressure': {'weight': 0.01, 'default': 0.0, 'payload_key': 'Hypertension'},
             'anaemia': {'weight': 0.01, 'default': 0.0, 'payload_key': 'Anaemia'},
             'sex': {'weight': 0.01, 'default': 1.0, 'payload_key': 'Gender'},
