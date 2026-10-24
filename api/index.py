@@ -210,7 +210,7 @@ def generate_elaborate_6month_routine(evaluated_diseases, patient_vitals, alert_
         'model': 'openrouter/free',
         'messages': [{'role': 'user', 'content': prompt}],
         'temperature': 0.2,
-        'max_tokens': 1200, 
+        'max_tokens': 2500, 
     }
 
     req = urllib.request.Request(
