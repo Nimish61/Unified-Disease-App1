@@ -149,10 +149,32 @@ DISEASE_METADATA = {
     }
 }
 
+def is_missing(val, payload_key):
+    """Determines if a value is genuinely missing or a default/impossible 0."""
+    if val in [None, '', 'null']:
+        return True
+    try:
+        float_val = float(val)
+        # List of features where a '0' input is physically impossible and means the UI box was untouched
+        impossible_zeros = [
+            'Age', 'BMI', 'BloodPressure', 'Glucose', 'Insulin', 'SkinThickness',
+            'FollowUpTime', 'SerumCreatinine', 'EjectionFraction', 'SerumSodium',
+            'CreatininePhosphokinase', 'Platelets', 'SpecificGravity', 'BloodGlucoseRandom',
+            'BloodUrea', 'Potassium', 'Hemoglobin', 'PackedCellVolume', 'WhiteBloodCellCount',
+            'RedBloodCellCount', 'Cholesterol', 'MaxHeartRate', 'TotalBilirubin',
+            'DirectBilirubin', 'AlkalinePhosphotase', 'AlamineAminotransferase',
+            'AspartateAminotransferase', 'TotalProteins', 'Albumin'
+        ]
+        if float_val == 0.0 and payload_key in impossible_zeros:
+            return True
+    except ValueError:
+        return True
+    return False
+
 def generate_elaborate_6month_routine(evaluated_diseases, patient_vitals, alert_biomarkers):
     api_key = os.environ.get('OPENROUTER_API_KEY')
     if not api_key:
-        return 'OpenRouter API key is not configured.'
+        return '<p style="color: #d9534f;"><strong>Error:</strong> OpenRouter API key is not configured.</p>'
 
     prompt = f"""
     You are an expert Clinical AI and Preventative Medicine Consultant.
@@ -188,7 +210,7 @@ def generate_elaborate_6month_routine(evaluated_diseases, patient_vitals, alert_
         'model': 'openrouter/free',
         'messages': [{'role': 'user', 'content': prompt}],
         'temperature': 0.2,
-        'max_tokens': 950,
+        'max_tokens': 550, # Dropped from 950 to avoid Vercel timeout
     }
 
     req = urllib.request.Request(
@@ -204,13 +226,17 @@ def generate_elaborate_6month_routine(evaluated_diseases, patient_vitals, alert_
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=9) as response:
+        # Aggressive 6.5 second timeout to guarantee it finishes before Vercel kills the app
+        with urllib.request.urlopen(req, timeout=6.5) as response:
             res_data = json.loads(response.read().decode('utf-8'))
             if 'choices' in res_data and len(res_data['choices']) > 0:
                 return res_data['choices'][0]['message']['content']
             return f"<p style='color: #d9534f;'>Generation failed.</p>"
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        return f"<p style='color: #d9534f;'><strong>OpenRouter API Error ({e.code}):</strong> {error_body}</p>"
     except Exception as e:
-        return f"<p style='color: #d9534f;'>Routine generation error.</p>"
+        return f"<p style='color: #d9534f;'><strong>Routine generation error:</strong> {str(e.__class__.__name__)} - {str(e)}</p>"
 
 @app.route('/api/predict/general', methods=['POST'])
 def predict_general():
@@ -226,11 +252,12 @@ def predict_general():
         if not model:
             continue
 
-        # 1. Reject if ANY critical feature is missing
+        # 1. Reject if ANY critical feature is missing (or is an impossible 0)
         missing_critical = False
         for crit in meta['critical_features']:
-            val = data.get(meta['features'][crit]['payload_key'])
-            if val in [None, '', 'null']:
+            payload_key = meta['features'][crit]['payload_key']
+            val = data.get(payload_key)
+            if is_missing(val, payload_key):
                 missing_critical = True
                 break
                 
@@ -242,8 +269,10 @@ def predict_general():
         present_weight = 0.0
 
         for feat_name, feat_meta in meta['features'].items():
-            val = data.get(feat_meta['payload_key'])
-            if val not in [None, '', 'null']:
+            payload_key = feat_meta['payload_key']
+            val = data.get(payload_key)
+            
+            if not is_missing(val, payload_key):
                 try:
                     parsed_val = float(val)
                     feature_row[feat_name] = parsed_val
@@ -258,15 +287,16 @@ def predict_general():
                         (feat_name == 'Direct_bilirubin' and parsed_val >= 0.5) or
                         (feat_name == 'ejection_fraction' and parsed_val <= 40.0)
                     ):
-                        biomarker_alerts[feat_meta['payload_key']] = parsed_val
+                        biomarker_alerts[payload_key] = parsed_val
                 except ValueError:
                     feature_row[feat_name] = feat_meta['default']
             else:
+                # Apply the safe default and DO NOT increase confidence weight
                 feature_row[feat_name] = feat_meta['default']
 
         confidence_score = round(min(present_weight * 100, 100.0), 1)
 
-        # 3. Reject if overall data quality is too low
+        # 3. Reject if overall data quality is too low (less than 65% of required feature importance)
         if confidence_score < 65.0:
             continue
 
