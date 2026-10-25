@@ -49,7 +49,7 @@ DISEASE_METADATA = {
     },
     'Heart Failure': {
         'model_key': 'heart_failure',
-        'critical_features': ['ejection_fraction', 'serum_creatinine', 'time'],
+        'critical_features': ['ejection_fraction', 'serum_creatinine'],
         'features': {
             'age': {'weight': 0.08, 'default': 55.0, 'payload_key': 'Age'},
             'anaemia': {'weight': 0.01, 'default': 0.0, 'payload_key': 'Anaemia'},
