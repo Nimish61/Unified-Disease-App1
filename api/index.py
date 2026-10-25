@@ -306,6 +306,16 @@ def predict_general():
             pos_idx = meta.get('positive_class_index', 1) 
             pred_prob = round(float(model.predict_proba(df_input)[0][pos_idx]) * 100, 2)
 
+            # Deterministic Clinical Overrides (Bypass ML limitations)
+            if disease_name == 'Heart Failure' and feature_row.get('ejection_fraction', 55.0) <= 35.0:
+                pred_prob = 99.0
+            if disease_name == 'Kidney Disease' and feature_row.get('SerumCreatinine', 0.9) >= 3.0:
+                pred_prob = 99.0
+            if disease_name == 'Diabetes' and feature_row.get('Glucose', 90.0) >= 200.0:
+                pred_prob = 99.0
+            if disease_name == 'Liver Disease' and (feature_row.get('Direct_bilirubin', 0.2) >= 2.0 or feature_row.get('Alamine_Aminotransferase', 25.0) >= 150.0):
+                pred_prob = 99.0
+
             evaluated_diseases[disease_name] = {
                 'probability': pred_prob,
                 'confidence': confidence_score,
